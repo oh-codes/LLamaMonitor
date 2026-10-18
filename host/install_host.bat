@@ -3,7 +3,6 @@ setlocal
 set "HOST_DIR=%~dp0"
 set "JSON_PATH=%HOST_DIR%com.llama.smi_host.json"
 set "EXE_PATH=%HOST_DIR%smi_bridge.exe"
-set "CS_PATH=%HOST_DIR%smi_host.cs"
 set "DEFAULT_ID=mogoecckabfchcngfnfgebnhdfmgafpd"
 
 if not "%~1"=="" (
@@ -19,10 +18,17 @@ if not "%~1"=="" (
 echo Registering Native Messaging Host for Google Chrome...
 echo Extension ID: %EXT_ID%
 
-REM Compile native smi_bridge.exe if it does not exist
+REM Build the host with Go only when the prebuilt binary is missing
 if not exist "%EXE_PATH%" (
-    echo Compiling native smi_bridge.exe with Windows csc.exe...
-    "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /target:exe /out:"%EXE_PATH%" "%CS_PATH%"
+    echo Building native smi_bridge.exe with Go...
+    pushd "%HOST_DIR%"
+    go build -trimpath -ldflags "-s -w -H=windowsgui" -o "%EXE_PATH%" .
+    if errorlevel 1 (
+        popd
+        echo [ERROR] smi_bridge.exe missing and the Go build failed. Install Go 1.21+ or restore the prebuilt binary.
+        exit /b 1
+    )
+    popd
 )
 
 REM Generate dynamic JSON pointing directly to smi_bridge.exe
@@ -41,9 +47,6 @@ if %errorlevel% equ 0 (
     echo [ERROR] Failed to write registry key.
     exit /b 1
 )
-
-REM Also register in Edge
-reg add "HKCU\Software\Microsoft\Edge\NativeMessagingHosts\com.llama.smi_host" /ve /t REG_SZ /d "%JSON_PATH%" /f >nul
 
 echo Done.
 if "%~1"=="" pause

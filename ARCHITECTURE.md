@@ -56,7 +56,7 @@ It offers two viewing modes:
 3. **Background Service Worker (`background/service_worker.js`)**:
    - Manages extension lifecycle.
    - Opens the full dashboard or side panel depending on user interaction mode.
-4. **Native Messaging Host (`host/smi_bridge.exe` or `host/smi_host.py`)**:
+4. **Native Messaging Host (`host/main.go`, shipped as `host/smi_bridge.exe`)**:
    - Out-of-sandbox bridge launched and supervised by Chrome.
    - Implements Chrome's binary 32-bit uint32 message framing protocol.
    - Queries `nvidia-smi` across all installed GPUs and returns structured JSON.

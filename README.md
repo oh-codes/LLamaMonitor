@@ -115,10 +115,11 @@ Runs directly inside Google Chrome with two complementary views:
 
 | Requirement | Needed for |
 | :--- | :--- |
-| Windows 10/11 | `install_host.bat` and the prebuilt `smi_bridge.exe` (.NET Framework 4) |
+| Windows 10/11 | `install_host.bat` and the prebuilt `smi_bridge.exe` (no runtime needed) |
 | Google Chrome | The extension itself (Manifest V3, side panel API) |
 | NVIDIA driver | Per-GPU VRAM, temperature, power and utilization via `nvidia-smi` |
 | A local inference server | `llama-server` (or an OpenAI-compatible backend) reachable on `127.0.0.1` |
+| Go 1.21+ | Only to rebuild the host from source; the repo ships a prebuilt binary |
 
 Without an NVIDIA GPU the dashboard still renders host CPU, RAM and the request inspector; the GPU cards stay empty and the native bridge reports the missing `nvidia-smi`.
 
@@ -148,6 +149,18 @@ install_host.bat
 ### Step 4: Open Monitor
 - Click the extension icon in your Chrome toolbar to launch the **Full-Browser Dashboard**.
 - Or open Chrome's Side Panel and select **Universal llama.cpp**.
+
+### Rebuilding the Host (optional)
+
+The repo ships a prebuilt `smi_bridge.exe`, so nothing has to be compiled to install it. To rebuild it, or to produce hosts for other operating systems:
+
+```bash
+cd host
+sh build.sh          # current OS -> smi_bridge / smi_bridge.exe
+sh build.sh --all    # Windows, Linux and macOS binaries -> host/dist/
+```
+
+Go cross-compiles without extra toolchains, and `CGO_ENABLED=0` keeps each output a single static binary.
 
 ---
 
@@ -218,7 +231,13 @@ For in-depth security and architectural specifications:
 
 ## Running Automated Tests
 
-Run the included unit test suite:
+Host (Go):
+```bash
+cd host
+go test ./...
+```
+
+Legacy Python reference host:
 ```bash
 python tests/test_host.py
 ```
@@ -252,9 +271,13 @@ LLamaMonitor/
 │   ├── monitor.css            # Side panel styling
 │   └── monitor.js             # Side panel controller
 ├── host/
-│   ├── smi_host.cs            # C# Native Messaging Host source
-│   ├── smi_bridge.exe         # Compiled 64-bit Windows Native Host binary
-│   ├── smi_host.py            # Python reference Native Host
+│   ├── main.go                # Native Messaging Host (Go, the shipped binary)
+│   ├── main_test.go           # Host unit tests
+│   ├── go.mod
+│   ├── build.sh               # Builds the host; --all cross-compiles every target
+│   ├── smi_bridge.exe         # Prebuilt Windows amd64 host binary
+│   ├── smi_host.cs            # Legacy C# host (reference only)
+│   ├── smi_host.py            # Legacy Python host (reference only)
 │   ├── install_host.bat       # 1-Click Windows registry installer
 │   ├── run_host.bat           # Launcher script
 │   └── com.llama.smi_host.json.example # Host manifest template

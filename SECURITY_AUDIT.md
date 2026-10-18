@@ -60,8 +60,8 @@ This audit assesses the security boundaries of the **Local LLM Monitor Chrome Ex
 
 | Security Requirement | Status | Verification Method |
 | :--- | :---: | :--- |
-| `shell=False` in all subprocess calls | PASS | Code audit of `host/smi_host.py` |
-| Command whitelist validation | PASS | Unit test `tests/test_host.py` with adversarial payloads |
-| Message size ceiling (1MB) | PASS | Unit test with oversized length header |
+| No shell invocation in the host | PASS | Code audit of `host/main.go`: `exec.Command` with a fixed argument list, no shell |
+| Command whitelist validation | PASS | `host/main_test.go` and `tests/test_host.py` with adversarial payloads |
+| Message size ceiling (1MB) | PASS | `maxPayloadBytes` check in `host/main.go`, tested with an oversized header |
 | Zero unescaped `innerHTML` | PASS | Code audit of `sidepanel/monitor.js` |
 | MV3 CSP compliance | PASS | Validated in `manifest.json` |

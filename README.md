@@ -111,6 +111,17 @@ Runs directly inside Google Chrome with two complementary views:
 
 ## Quick Start (Installation)
 
+### Requirements
+
+| Requirement | Needed for |
+| :--- | :--- |
+| Windows 10/11 | `install_host.bat` and the prebuilt `smi_bridge.exe` (.NET Framework 4) |
+| Google Chrome | The extension itself (Manifest V3, side panel API) |
+| NVIDIA driver | Per-GPU VRAM, temperature, power and utilization via `nvidia-smi` |
+| A local inference server | `llama-server` (or an OpenAI-compatible backend) reachable on `127.0.0.1` |
+
+Without an NVIDIA GPU the dashboard still renders host CPU, RAM and the request inspector; the GPU cards stay empty and the native bridge reports the missing `nvidia-smi`.
+
 ### Step 1: Clone Repository
 ```bash
 git clone https://github.com/oh-codes/LLamaMonitor.git
@@ -175,7 +186,7 @@ llama-server.exe ^
 | Flag | Category | Purpose |
 | :--- | :---: | :--- |
 | **`--metrics`** | **Essential** | Enables Prometheus metrics at `GET /metrics` for generation velocities. |
-| **`--slots`** | **Essential** | Enables slot tracking at `GET /slots` for prompt length and progress. |
+| **`--slots`** | **Default on** | Exposes `GET /slots` for prompt length and progress. Only `--no-slots` switches it off. |
 | **`--props`** | **Recommended** | Exposes model properties and max context size at `GET /props`. |
 | **`--log-file <path>`** | **Audit** | Directs operational logs to disk for latency auditing. |
 | **`--log-jsonl`** | **Audit** | Formats logs as JSON objects for line-by-line parsing. |
@@ -209,8 +220,9 @@ For in-depth security and architectural specifications:
 
 Run the included unit test suite:
 ```bash
-python -m unittest tests/test_host.py
+python tests/test_host.py
 ```
+(Or `python -m unittest discover -s tests`. The plain `python -m unittest tests/test_host.py` form fails on Python 3.12 because `tests/` is not a package.)
 
 Tests validate:
 - 32-bit little-endian binary message framing.

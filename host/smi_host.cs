@@ -356,7 +356,26 @@ namespace LlamaMonitorHost
         private static string EscapeJson(string str)
         {
             if (string.IsNullOrEmpty(str)) return "";
-            return str.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n");
+            var sb = new StringBuilder(str.Length + 16);
+            foreach (char c in str)
+            {
+                switch (c)
+                {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '"': sb.Append("\\\""); break;
+                    case '\r': break;
+                    case '\n': sb.Append("\\n"); break;
+                    // Raw tabs and control chars make the frame invalid JSON, so Chrome drops it.
+                    case '\t': sb.Append("\\t"); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    default:
+                        if (c < 0x20) sb.Append("\\u").Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
     }
 }

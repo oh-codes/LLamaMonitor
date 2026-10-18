@@ -2,8 +2,10 @@
 
 A real-time telemetry and inference monitor for local LLM engines (`llama.cpp`'s `llama-server`, Unsloth, Ollama, vLLM, and OpenAI-compatible backends).
 
+**GPU telemetry is NVIDIA-only.** The hardware cards read `nvidia-smi`, so AMD and Intel GPUs are not read at all. Everything else - host CPU, system RAM, slots, context fill and the request inspector - works on any machine.
+
 Runs directly inside Google Chrome with two complementary views:
-- **Full-Browser Tab Dashboard (`dashboard.html`)**: Rich 2-column workspace with live multi-GPU hardware cards, 8-fact request inspector, dynamic search/filter, and Gainsty-grade design system (light/dark mode).
+- **Full-Browser Tab Dashboard (`dashboard.html`)**: Rich 2-column workspace with live NVIDIA multi-GPU hardware cards, 8-fact request inspector, dynamic search/filter, and Gainsty-grade design system (light/dark mode).
 - **Chrome Side Panel (`sidepanel/monitor.html`)**: Compact sidebar docked next to active browser work.
 
 ---
@@ -91,7 +93,7 @@ Runs directly inside Google Chrome with two complementary views:
    - **Full Tab (`dashboard.html`)**: Rich workspace built on the Gainsty design system with light/dark theme switching (`tokens.css`).
    - **Side Panel (`sidepanel/monitor.html`)**: Compact MV3 sidebar for quick inspection while browsing or coding.
    - **1-Click Switching**: Click `↗` in the header anytime to expand the side panel into the full-browser tab.
-2. **Multi-GPU Telemetry & Combined VRAM Pool:**
+2. **NVIDIA Multi-GPU Telemetry & Combined VRAM Pool:**
    - Queries all installed NVIDIA GPUs in real time using native `nvidia-smi` queries.
    - Computes both individual GPU cards (VRAM, temperature, power wattage, utilization %) and the aggregate VRAM pool across multi-GPU rigs.
 3. **Host System Telemetry:**
@@ -121,7 +123,7 @@ Runs directly inside Google Chrome with two complementary views:
 | A local inference server | `llama-server` (or an OpenAI-compatible backend) reachable on `127.0.0.1` |
 | Go 1.21+ | Only to rebuild the host from source; the repo ships a prebuilt binary |
 
-Without an NVIDIA GPU the dashboard still renders host CPU, RAM and the request inspector; the GPU cards stay empty and the native bridge reports the missing `nvidia-smi`.
+Without an NVIDIA GPU the dashboard still renders host CPU, RAM and the request inspector; the GPU cards stay empty (a `Connecting...` placeholder on the dashboard) and the native bridge reports the missing `nvidia-smi`. AMD (ROCm) and Intel GPUs are not read.
 
 ### Step 1: Clone Repository
 ```bash

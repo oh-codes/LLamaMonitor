@@ -1,10 +1,9 @@
 @echo off
 setlocal
 set "DIR=%~dp0"
-where python >nul 2>nul
-if %errorlevel% equ 0 (
-    python -u "%DIR%smi_host.py"
+if exist "%DIR%smi_bridge.exe" (
+    "%DIR%smi_bridge.exe"
 ) else (
-    echo Python not found in PATH 1>&2
+    echo smi_bridge.exe not found. Run build.sh or install_host.bat first. 1>&2
     exit /b 1
 )

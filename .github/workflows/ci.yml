@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  host:
+    name: Host tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: host/go.mod
+      - name: Vet
+        working-directory: host
+        run: go vet ./...
+      - name: Test
+        working-directory: host
+        run: go test ./...
+
+  cross-compile:
+    name: Cross-compile every host target
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: host/go.mod
+      - name: Build
+        working-directory: host
+        run: sh build.sh --all
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosts
+          path: host/dist/
+
+  extension:
+    name: Extension checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Manifest is valid JSON
+        run: python -c "import json; json.load(open('manifest.json'))"
+      - name: JavaScript syntax
+        run: |
+          node --check dashboard.js
+          node --check sidepanel/monitor.js
+          node --check background/service_worker.js
+      - name: Reference Python host tests
+        run: python tests/test_host.py

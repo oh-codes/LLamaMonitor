@@ -459,31 +459,21 @@ function renderSlots(slots) {
   container.innerHTML = "";
 
   let busyCount = 0;
-  let totalCtx = 0;
-  let usedCtx = 0;
+  let ctxUsed = 0;
+  let ctxTotal = 0;
 
   for (const s of slots) {
     const isBusy = s.state === "processing" || s.is_processing === true;
     if (isBusy) busyCount++;
 
     const nCtx = s.n_ctx || 0;
+    if (!ctxTotal) ctxTotal = nCtx;
     const promptTokens = s.n_prompt_tokens || 0;
     const decodedTokens = (Array.isArray(s.next_token) && s.next_token[0]?.n_decoded) || 0;
 
     // Calculate actual active context tokens
-    let tokensUsed = 0;
-    if (promptTokens > 0) {
-      tokensUsed = promptTokens + decodedTokens;
-    } else if (s.n_past !== undefined && s.n_past > 0) {
-      tokensUsed = s.n_past;
-    } else if (s.n_prompt_tokens_cache > 0) {
-      tokensUsed = s.n_prompt_tokens_cache;
-    } else if (s.n_prompt_tokens_processed > 0) {
-      tokensUsed = s.n_prompt_tokens_processed;
-    }
-
-    totalCtx += nCtx;
-    usedCtx += tokensUsed;
+    const tokensUsed = promptTokens > 0 ? promptTokens + decodedTokens : 0;
+    if (tokensUsed > ctxUsed) ctxUsed = tokensUsed;
 
     const div = document.createElement("div");
     div.className = "slot-item";
@@ -526,10 +516,10 @@ function renderSlots(slots) {
   $("slots-total").textContent = `/ ${slots.length}`;
   $("slots-sub").textContent = `Idle: ${slots.length - busyCount}`;
 
-  if (totalCtx > 0) {
-    const fillPct = (usedCtx / totalCtx) * 100;
+  if (ctxTotal > 0) {
+    const fillPct = (ctxUsed / ctxTotal) * 100;
     $("ctx-pct").textContent = `${fillPct.toFixed(1)}%`;
-    $("ctx-sub").textContent = `${usedCtx.toLocaleString()} / ${totalCtx.toLocaleString()} tokens`;
+    $("ctx-sub").textContent = `${ctxUsed.toLocaleString()} / ${ctxTotal.toLocaleString()} tokens`;
   }
 }
 

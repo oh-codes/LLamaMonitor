@@ -197,20 +197,15 @@ function renderAllGpus(gpus) {
 
   let totalUsedMb = 0;
   let totalMaxMb = 0;
-  let splitParts = [];
 
   for (const g of gpus) {
     totalUsedMb += g.vram_used_mb || 0;
     totalMaxMb += g.vram_total_mb || 0;
-    const gbUsed = ((g.vram_used_mb || 0) / 1024).toFixed(1);
-    splitParts.push(`GPU ${g.index}: ${gbUsed}G`);
   }
 
   const totalGbUsed = (totalUsedMb / 1024).toFixed(1);
   const totalGbMax = (totalMaxMb / 1024).toFixed(1);
   const poolPct = totalMaxMb > 0 ? (totalUsedMb / totalMaxMb) * 100 : 0;
-
-  setText("vram-summary", `${splitParts.join(" · ")} (${totalGbUsed} / ${totalGbMax} GB)`);
 
   container.innerHTML = "";
 
@@ -350,7 +345,7 @@ function pollHostMetrics() {
 }
 
 // -----------------------------------------------------------------------------
-// Engine Polling (/slots & /props & Log Stream)
+// Engine Polling (/slots & /v1/models & Log Stream)
 // -----------------------------------------------------------------------------
 async function pollServer() {
   if (!activeProfile) return;
@@ -383,11 +378,23 @@ async function pollServer() {
 
     setText("loaded", `Online (Port ${portLabel})`);
     $("model-state").className = "value loaded";
-    setText("model", `${baseUrl}/v1`);
 
-    // Accurate context fill tracking
-    let totalCtx = 0;
-    let usedCtx = 0;
+    // Model name from the always-on OpenAI endpoint; no --props needed.
+    let modelName = `${baseUrl}/v1`;
+    try {
+      const modelsResp = await fetch(`${baseUrl}/v1/models`, { cache: "no-store", headers });
+      if (modelsResp.ok) {
+        const models = await modelsResp.json();
+        modelName = models?.data?.[0]?.id || modelName;
+      }
+    } catch (_) {
+      // Model name is optional; keep the base URL fallback.
+    }
+    setText("model", modelName);
+
+    // Context fill: the fullest slot's usage of its own context window.
+    let ctxUsed = 0;
+    let ctxTotal = 0;
     let busyCount = 0;
 
     for (const s of slots) {
@@ -395,17 +402,12 @@ async function pollServer() {
       if (isBusy) busyCount++;
 
       const nCtx = s.n_ctx || 0;
+      if (!ctxTotal) ctxTotal = nCtx;
+
       const promptTokens = s.n_prompt_tokens || 0;
       const decodedTokens = (Array.isArray(s.next_token) && s.next_token[0]?.n_decoded) || 0;
-
-      let tokensUsed = 0;
-      if (promptTokens > 0) tokensUsed = promptTokens + decodedTokens;
-      else if (s.n_past !== undefined && s.n_past > 0) tokensUsed = s.n_past;
-      else if (s.n_prompt_tokens_cache > 0) tokensUsed = s.n_prompt_tokens_cache;
-      else if (s.n_prompt_tokens_processed > 0) tokensUsed = s.n_prompt_tokens_processed;
-
-      totalCtx += nCtx;
-      usedCtx += tokensUsed;
+      const tokensUsed = promptTokens > 0 ? promptTokens + decodedTokens : 0;
+      if (tokensUsed > ctxUsed) ctxUsed = tokensUsed;
 
       // Inject active slot prompt and context size into task record if active
       if (s.id_task) {
@@ -417,9 +419,11 @@ async function pollServer() {
       }
     }
 
-    if (totalCtx > 0) {
-      const fillPct = (usedCtx / totalCtx) * 100;
-      setText("ctx-fill", `${fillPct.toFixed(1)}%`);
+    if (ctxTotal > 0) {
+      const fillPct = (ctxUsed / ctxTotal) * 100;
+      const usedStr = ctxUsed >= 1000 ? `${(ctxUsed / 1000).toFixed(1)}k` : String(ctxUsed);
+      const totalStr = ctxTotal >= 1000 ? `${Math.round(ctxTotal / 1000)}k` : String(ctxTotal);
+      setText("ctx-fill", `${usedStr} / ${totalStr} · ${fillPct.toFixed(1)}%`);
     }
 
     setText("active", busyCount > 0 ? `${busyCount} active slot${busyCount > 1 ? "s" : ""}` : `Idle: ${slots.length} slot${slots.length > 1 ? "s" : ""}`);

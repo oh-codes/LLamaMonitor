@@ -30,7 +30,7 @@ It offers two viewing modes:
                ▼                                        │
 ┌─────────────────────────────┐                         │
 │ Native Messaging Host       │                         │
-│ (smi_bridge.exe / .py)      │                         │
+│ (smi_bridge.exe, Go)        │                         │
 │ - Strict Whitelist Dispatch │                         │
 │ - Multi-GPU nvidia-smi / NVML│                        │
 └──────────────┬──────────────┘                         │
@@ -40,8 +40,8 @@ It offers two viewing modes:
 │ Host Hardware               │         │ Local Inference Server         │
 │ - NVIDIA Driver / NVML      │         │ - http://localhost:8080        │
 │ - Multi-GPU VRAM / Temp / W │         │ - http://localhost:8888        │
-│ - CPU & System RAM metrics  │         │ - GET /slots, /metrics, /props │
-└─────────────────────────────┘         │ - Log Audit (JSONL / Text)     │
+│ - CPU & System RAM metrics  │         │ - GET /slots, /metrics, /v1/models │
+└─────────────────────────────┘         │ - Log Audit (plain-text slot print_timing) │
                                         └────────────────────────────────┘
 ```
 
@@ -89,8 +89,8 @@ sequenceDiagram
     Server-->>UI: Slot states, tokens predicted, tok/s, context fill
 
     opt Operational Log Configured
-        UI->>Server: fetch(file:///path/to/server.jsonl)
-        Server-->>UI: JSONL / Text event logs
+        UI->>NativeHost: postMessage({"action": "get_log", "path": ...})
+        NativeHost-->>UI: last 500 plain-text log lines
     end
 
     UI->>UI: Update KPI Cards, Hardware Pool, and Request Inspector

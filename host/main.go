@@ -280,6 +280,7 @@ func queryNvidiaSmi() any {
 	args := []string{"--query-gpu=index,name,utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw",
 		"--format=csv,noheader,nounits"}
 	cmd := exec.CommandContext(ctx, smiPath(), args...)
+	hideConsole(cmd)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
